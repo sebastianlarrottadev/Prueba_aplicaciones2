@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deceptive - Lobby</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <script src="/socket.io/socket.io.js"></script>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Press Start 2P", cursive;
+  background: radial-gradient(circle at center, #0d1228 0%, #1a1f3c 50%, #0a0f24 100%);
+  color: #ffffff;
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 🌌 Fondo animado */
+.bg-animation {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.floating-pixel {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(0, 255, 255, 0.4);
+  animation: float 8s infinite ease-in-out;
+  border-radius: 50%;
+}
+
+.floating-line {
+  position: absolute;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00ffff, transparent);
+  animation: moveLine 6s infinite linear;
+  opacity: 0.6;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10%, 90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-20px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes moveLine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100vw);
+  }
+}
+
+/* 🧍 Pantalla Lobby */
+.lobby-screen {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* ✨ Jugadores */
+.player-container {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(10, 20, 40, 0.4);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  backdrop-filter: blur(5px);
+}
+
+.player-container img {
+  width: 90px;
+  height: auto;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 0 15px #00ffff);
+  transition: transform 0.3s ease;
+}
+
+.player-container img:hover {
+  transform: scale(1.1);
+}
+
+.player-name {
+  color: #00ffcc;
+  font-size: 0.7rem;
+  margin-bottom: 8px;
+  text-shadow: 0 0 6px #00ffff;
+}
+
+/* ❤️ Barra de salud */
+.health-bar {
+  width: 80%;
+  height: 18px;
+  background: rgba(0, 40, 70, 0.8);
+  border: 2px solid #00ffff;
+  border-radius: 10px;
+  margin: 0 auto;
+  overflow: hidden;
+  box-shadow: 0 0 8px #00ffff;
+}
+
+.health-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00ff88, #00ccff, #88ff00);
+  animation: healthPulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes healthPulse {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.4); }
+}
+
+/* 🕹️ Botones inferiores mejorados */
+.bottom-buttons {
+  position: absolute;
+  bottom: 60px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 80px;
+  z-index: 10;
+}
+
+/* ✨ Estilo mejorado para los íconos inferiores */
+.btn-img {
+  width: 120px;
+  height: 120px;
+  cursor: pointer;
+  transition: transform 0.3s ease, filter 0.3s ease;
+  animation: floaty 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 25px #00ffff);
+  border-radius: 20px;
+  background: radial-gradient(circle at center, rgba(0, 255, 255, 0.15), transparent);
+  padding: 8px;
+  object-fit: contain;
+  image-rendering: crisp-edges;
+}
+
+.btn-img:hover {
+  transform: scale(1.25);
+  filter: drop-shadow(0 0 40px #00ffcc);
+}
+
+/* 🪶 Animación flotante */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* 🔙 Botón volver */
+.back-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 55px;
+  height: 55px;
+  background: linear-gradient(135deg, #00ff88, #00ccff);
+  border: none;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #0d1228;
+  z-index: 20;
+  text-decoration: none;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.6);
+  animation: glowButton 2s ease-in-out infinite alternate;
+}
+
+@keyframes glowButton {
+  from {
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.4),
+                0 0 20px rgba(0, 204, 255, 0.4);
+  }
+  to {
+    box-shadow: 0 0 25px rgba(0, 255, 136, 0.9),
+                0 0 40px rgba(0, 204, 255, 0.9);
+  }
+}
+
+.back-btn:hover {
+  transform: scale(1.1);
+}
+
+/* 🧠 Mensaje de bienvenida */
+.welcome-message {
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  font-size: 0.7rem;
+  background: linear-gradient(45deg, #00ff88, #00ccff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+  letter-spacing: 1px;
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.3),
+                 0 0 20px rgba(0, 204, 255, 0.3);
+  }
+  to {
+    text-shadow: 0 0 20px rgba(0, 255, 136, 0.8),
+                 0 0 40px rgba(0, 204, 255, 0.8);
+  }
+}
+
+/* 📱 Responsivo */
+@media (max-width: 600px) {
+  .player-container img {
+    width: 70px;
+  }
+  .bottom-buttons {
+    gap: 40px;
+    bottom: 50px;
+  }
+  .btn-img {
+    width: 100px;
+    height: 100px;
+  }
+}
+</style>
+
+</head>
+<body>
+  <div class="bg-animation" id="bgAnimation"></div>
+  <a href="index.html" class="back-btn">←</a>
+  <div class="welcome-message" id="welcomeMsg">WELCOME PLAYER</div>
+
+  <div class="lobby-screen">
+    <div id="playerList"></div>
+  </div>
+
+  <!-- BOTONES INFERIORES -->
+<div class="bottom-buttons">
+  <a href="../AR/tarjeta.html"><img src="cofre (1).png" alt="Mystery" class="btn-img"></a>
+  <a href="../AR/chance.html"><img src="CHANCE (1).png" alt="Treasure" class="btn-img"></a>
+  <a href="../AR/ruleta.html"><img src="ruleta.png" alt="Ruleta" class="btn-img"></a>
+</div>
+
+
+  <script>
+    const bgAnimation = document.getElementById('bgAnimation');
+    const welcomeMsg = document.getElementById('welcomeMsg');
+    const playerList = document.getElementById('playerList');
+
+    // Fondo animado
+    function createFloatingPixel() {
+      const pixel = document.createElement('div');
+      pixel.className = 'floating-pixel';
+      pixel.style.left = Math.random() * 100 + '%';
+      pixel.style.animationDelay = Math.random() * 8 + 's';
+      pixel.style.animationDuration = (Math.random() * 4 + 6) + 's';
+      bgAnimation.appendChild(pixel);
+      setTimeout(() => pixel.remove(), 10000);
+    }
+    function createFloatingLine() {
+      const line = document.createElement('div');
+      line.className = 'floating-line';
+      line.style.top = Math.random() * 100 + '%';
+      line.style.width = (Math.random() * 200 + 100) + 'px';
+      line.style.animationDelay = Math.random() * 6 + 's';
+      bgAnimation.appendChild(line);
+      setTimeout(() => line.remove(), 8000);
+    }
+    for (let i = 0; i < 15; i++) setTimeout(createFloatingPixel, i * 500);
+    for (let i = 0; i < 5; i++) setTimeout(createFloatingLine, i * 1200);
+
+    // --- SOCKET ---
+    const socket = io();
+    const playerName = localStorage.getItem("playerName");
+    const salaId = localStorage.getItem("salaId");
+    const personaje = localStorage.getItem("personaje") || "ps1.png";
+
+    if (!playerName || !salaId) window.location.href = "index.html";
+    welcomeMsg.textContent = `WELCOME ${playerName.toUpperCase()}`;
+
+    // Avisar al servidor que este jugador se une con su personaje
+    socket.emit("unirseSala", { salaId, playerName, personaje });
+
+    // Actualizar lista de jugadores con sus personajes reales
+    socket.on("actualizarLobby", (jugadores) => {
+      playerList.innerHTML = jugadores.map(j => `
+        <div class="player-container">
+          <img src="${j.personaje || 'ps1.png'}" alt="personaje">
+          <div class="player-name">${j.name}</div>
+          <div class="health-bar">
+            <div class="health-fill" style="width:${Math.floor(Math.random() * 40 + 60)}%"></div>
+          </div>
+        </div>
+      `).join('');
+    });
+  </script>
+</body>
+</html>

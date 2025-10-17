@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Menú Futurista con Retroalimentación AR (Touch OK)</title>
+
+  <!-- Librerías -->
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.0/aframe/build/aframe-ar.js"></script>
+
+  <style>
+    body { margin: 0; overflow: hidden; background: black; }
+
+    /* Aviso flotante */
+    #aviso {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 255, 255, 0.15);
+      border: 2px solid #00ffff;
+      box-shadow: 0 0 15px #00ffff;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.3em;
+      text-align: center;
+      padding: 20px 30px;
+      border-radius: 10px;
+      display: none;
+      z-index: 999;
+      animation: glow 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow {
+      from { box-shadow: 0 0 10px #00ffff; }
+      to { box-shadow: 0 0 25px #00ffff; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="aviso"></div>
+
+  <a-scene
+    embedded
+    vr-mode-ui="enabled: false"
+    arjs="sourceType: webcam; detectionMode: mono; trackingMethod: best; debugUIEnabled: false;">
+
+    <!-- Luces -->
+    <a-entity light="type: ambient; intensity: 0.8"></a-entity>
+    <a-entity light="type: directional; intensity: 1.2" position="1 1 1"></a-entity>
+
+    <!-- Cámara -->
+    <a-entity camera></a-entity>
+
+    <!-- Marcador -->
+    <a-marker type="pattern" preset="hiro"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5">
+
+      <!-- Menú con botones -->
+      <a-entity id="menu3d" position="0 1.2 0" scale="1 1 1">
+
+        <!-- Botón 1 -->
+        <a-image id="boton1" src="1.png"
+                 position="0 0.8 0"
+                 width="1.8" height="0.5"
+                 transparent="true"
+                 class="clickable">
+        </a-image>
+
+        <!-- Botón 2 -->
+        <a-image id="boton2" src="2.png"
+                 position="0 0 0"
+                 width="1.8" height="0.5"
+                 transparent="true"
+                 class="clickable">
+        </a-image>
+
+        <!-- Botón 3 -->
+        <a-image id="boton3" src="3OP.png"
+                 position="0 -0.8 0"
+                 width="1.8" height="0.5"
+                 transparent="true"
+                 class="clickable">
+        </a-image>
+
+      </a-entity>
+    </a-marker>
+
+  </a-scene>
+
+  <script>
+    const aviso = document.getElementById("aviso");
+
+    function mostrarAviso(texto) {
+      aviso.innerText = texto;
+      aviso.style.display = "block";
+      setTimeout(() => { aviso.style.display = "none"; }, 2500);
+    }
+
+    function efectoBoton(boton) {
+      boton.setAttribute("scale", "1.3 1.3 1.3");
+      setTimeout(() => boton.setAttribute("scale", "1 1 1"), 200);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const sceneEl = document.querySelector("a-scene");
+      const botones = document.querySelectorAll(".clickable");
+
+      // Raycaster manual para touch
+      sceneEl.addEventListener("touchstart", (e) => {
+        const touch = e.touches[0];
+        const mouse = new THREE.Vector2();
+        const camera = sceneEl.camera;
+        const raycaster = new THREE.Raycaster();
+
+        // Normalizar coordenadas táctiles
+        mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+
+        // Objetos de A-Frame convertidos a Three.js
+        const objects = [];
+        botones.forEach(b => {
+          if (b.object3D) objects.push(b.object3D);
+        });
+
+        const intersects = raycaster.intersectObjects(objects, true);
+
+        if (intersects.length > 0) {
+          const clicked = intersects[0].object.el;
+
+          if (clicked.id === "boton1") {
+            efectoBoton(clicked);
+            mostrarAviso("Has decidido CAMBIAR tu carta 🔁 (-5% vida)");
+          }
+          else if (clicked.id === "boton2") {
+            efectoBoton(clicked);
+            mostrarAviso("Has aumentado tus probabilidades ✨ (-3% vida)");
+          }
+          else if (clicked.id === "boton3") {
+            efectoBoton(clicked);
+            mostrarAviso("Mantienes tu carta actual 🃏 (vida igual)");
+          }
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

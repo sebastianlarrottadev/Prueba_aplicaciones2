@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Deceptive - Retro Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+
+<body>
+  <div class="bg-animation" id="bgAnimation"></div>
+
+  <div class="screen start-screen" id="startScreen">
+    <h1 class="title">deceptive</h1>
+
+    <div class="input-container">
+      <input type="text" class="name-input" id="playerName" placeholder="Usuario" maxlength="20">
+    </div>
+    <div class="input-container">
+      <input type="text" class="sala-input" id="salaId" placeholder="Nombre de la sala">
+    </div>
+
+    <!-- 🎮 Carrusel de selección de personaje -->
+    <div class="carousel-container">
+      <h2 class="character-title">Selecciona tu personaje</h2>
+      <div class="carousel">
+        <span class="arrow" id="arrowLeft">⬅</span>
+        <img id="characterImage" src="ps1.png" alt="personaje">
+        <span class="arrow" id="arrowRight">➡</span>
+      </div>
+    </div>
+
+    <div class="btn-container">
+      <button id="crearSalaBtn">Crear Sala</button>
+      <button id="unirseSalaBtn">Unirse a Sala</button>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+
+    let jugadorId = null;
+    let personajeIndex = 0;
+    const personajes = ["ps1.png", "ps2.png", "ps3.png", "ps4.png"];
+
+    const personajeImg = document.getElementById("characterImage");
+    const leftArrow = document.getElementById("arrowLeft");
+    const rightArrow = document.getElementById("arrowRight");
+
+    // 🎮 Carrusel funcional
+    leftArrow.addEventListener("click", () => {
+      personajeIndex = (personajeIndex - 1 + personajes.length) % personajes.length;
+      personajeImg.src = personajes[personajeIndex];
+      localStorage.setItem("personaje", personajes[personajeIndex]);
+    });
+
+    rightArrow.addEventListener("click", () => {
+      personajeIndex = (personajeIndex + 1) % personajes.length;
+      personajeImg.src = personajes[personajeIndex];
+      localStorage.setItem("personaje", personajes[personajeIndex]);
+    });
+
+    // Guardar personaje inicial por defecto
+    localStorage.setItem("personaje", personajes[personajeIndex]);
+
+    socket.on("jugadorId", (id) => {
+      jugadorId = id;
+      localStorage.setItem("jugadorId", jugadorId);
+    });
+
+    // 🧩 Crear sala
+    document.getElementById("crearSalaBtn").addEventListener("click", () => {
+      const nombre = document.getElementById("playerName").value.trim();
+      const salaId = document.getElementById("salaId").value.trim();
+      const personaje = localStorage.getItem("personaje");
+
+      if (!nombre || !salaId) {
+        alert("Debes ingresar nombre y sala");
+        return;
+      }
+
+      localStorage.setItem("playerName", nombre);
+      localStorage.setItem("salaId", salaId);
+
+      socket.emit("crearSala", { salaId, nombre, personaje });
+    });
+
+    // 🧩 Unirse a sala
+    document.getElementById("unirseSalaBtn").addEventListener("click", () => {
+      const nombre = document.getElementById("playerName").value.trim();
+      const salaId = document.getElementById("salaId").value.trim();
+      const personaje = localStorage.getItem("personaje");
+
+      if (!nombre || !salaId) {
+        alert("Debes ingresar nombre y sala");
+        return;
+      }
+
+      localStorage.setItem("playerName", nombre);
+      localStorage.setItem("salaId", salaId);
+
+      socket.emit("unirseSala", { salaId, playerName: nombre, personaje });
+    });
+
+    // ✅ Redirección al lobby
+    socket.on("salaCreada", () => {
+      window.location.href = "lobby.html";
+    });
+
+    socket.on("unidoSala", () => {
+      window.location.href = "lobby.html";
+    });
+
+    socket.on("error", (msg) => {
+      alert(msg);
+    });
+  </script>
+</body>
+</html>
